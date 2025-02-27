@@ -29,16 +29,23 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         }
         super().__init__(request, client_address, server)
 
-    def end_headers(self):
-        self.send_header('Access-Control-Allow-Origin', '*')
-        SimpleHTTPRequestHandler.end_headers(self)
-
     def do_GET(self):
         if self.path in self.get_routes:
             self.get_routes[self.path]()
         else:
             logger.warning(f'GET 404 {self.path}')
             self.send_response(404, 'Not Found')
+
+    def do_POST(self):
+        if self.path in self.post_routes:
+            self.post_routes[self.path]()
+        else:
+            logger.warning(f'POST 405 {self.path}')
+            self.send_response(405, 'Method Not Allowed')
+
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        SimpleHTTPRequestHandler.end_headers(self)
 
     def get_images(self):
         logger.info(f'GET {self.path}')
@@ -56,13 +63,6 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
         self.wfile.write(open('static/upload.html', 'rb').read())
-
-    def do_POST(self):
-        if self.path in self.post_routes:
-            self.post_routes[self.path]()
-        else:
-            logger.warning(f'POST 405 {self.path}')
-            self.send_response(405, 'Method Not Allowed')
 
     def post_upload(self):
         logger.info(f'POST {self.path}')
@@ -105,7 +105,9 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
 def run(server_class=HTTPServer, handler_class=BaseHTTPRequestHandler):
+    # noinspection PyTypeChecker
     httpd = server_class(SERVER_ADDRESS, handler_class)
+    # noinspection PyBroadException
     try:
         logger.info(f'Serving at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')
         httpd.serve_forever()
