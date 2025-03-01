@@ -53,7 +53,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json; charset=utf-8')
         self.end_headers()
 
-        images = [f for f in listdir('images') if isfile(join('images', f))]
+        images = [f for f in listdir(UPLOAD_DIR) if isfile(join('images', f))]
         logger.info(images)
         self.wfile.write(json.dumps({'images': images}).encode('utf-8'))
 
@@ -62,7 +62,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
-        self.wfile.write(open('static/upload.html', 'rb').read())
+        self.wfile.write(open('upload.html', 'rb').read())
 
     def post_upload(self):
         logger.info(f'POST {self.path}')
