@@ -1,12 +1,11 @@
-import os
 from http.server import HTTPServer, BaseHTTPRequestHandler, SimpleHTTPRequestHandler
 from uuid import uuid4
 from loguru import logger
 from os import listdir
-from os.path import isfile, join
+from os.path import isfile, join, splitext
+from PIL import Image
 import json
 import cgi
-from PIL import Image
 
 SERVER_ADDRESS = ('0.0.0.0', 8000)
 ALLOWED_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.gif')
@@ -72,6 +71,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             self.send_response(413, 'Payload Too Large')
             return
 
+        # noinspection PyTypeChecker
         form = cgi.FieldStorage(
             fp=self.rfile,
             headers=self.headers,
@@ -79,7 +79,7 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         )
 
         data = form['image'].file
-        _, ext = os.path.splitext(form['image'].filename)
+        _, ext = splitext(form['image'].filename)
 
         if ext not in ALLOWED_EXTENSIONS:
             logger.error('Unsupported file extension')
@@ -104,18 +104,18 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
         self.send_header('Location', f'/images/{image_name}')
         self.end_headers()
 
-def run(server_class=HTTPServer, handler_class=BaseHTTPRequestHandler):
+def run():
     # noinspection PyTypeChecker
-    httpd = server_class(SERVER_ADDRESS, handler_class)
+    httpd = HTTPServer(SERVER_ADDRESS, ImageHostingHandler)
     # noinspection PyBroadException
     try:
         logger.info(f'Serving at http://{SERVER_ADDRESS[0]}:{SERVER_ADDRESS[1]}')
         httpd.serve_forever()
-    except BaseException:
+    except Exception:
         pass
     finally:
         logger.info('Server stopped')
         httpd.server_close()
 
 if __name__ == '__main__':
-    run(handler_class=ImageHostingHandler)
+    run()
