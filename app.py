@@ -8,6 +8,7 @@ import json
 import cgi
 
 SERVER_ADDRESS = ('0.0.0.0', 8000)
+NGINX_ADDRESS = ('localhost', 8080)
 ALLOWED_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.gif')
 ALLOWED_LENGTH = 5 * 1024 * 1024
 UPLOAD_DIR = 'images'
@@ -99,10 +100,21 @@ class ImageHostingHandler(BaseHTTPRequestHandler):
             self.send_response(400, 'Invalid file')
             return
 
+        # подставляем ссылки на картинку в html-документ
+        str_for_replace = {
+            'href="?"': f'href="{UPLOAD_DIR}/{image_name}"',
+            'src="?"': f'src="{UPLOAD_DIR}/{image_name}"',
+            'value="?"': f'value="http://{NGINX_ADDRESS[0]}:{NGINX_ADDRESS[1]}/{UPLOAD_DIR}/{image_name}"'
+        }
+        html_strings = open('success.html', 'r').read()
+        for old, new in str_for_replace.items():
+            html_strings = html_strings.replace(old, new)
+
         logger.info(f'Upload success: {image_name}')
-        self.send_response(301)
-        self.send_header('Location', f'/images/{image_name}')
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
         self.end_headers()
+        self.wfile.write(html_strings.encode('utf-8'))
 
 def run():
     # noinspection PyTypeChecker
